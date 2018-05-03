@@ -1,16 +1,25 @@
-var username = "";
-var tag = "";
-var spreadsheet_id = "";
-var fetchNum = 10;
-
 function outputListMain() {
+  var properties = PropertiesService.getScriptProperties();
+
   // fetch URL list
+  var username = properties.getProperty("hatebu_username");
+  var tag = properties.getProperty("hatebu_tag");
+  var fetchNum = parseInt(properties.getProperty("hatebu_fetch_size"), 10);
+  if(!username.length || !tag.length || !fetchNum) {
+    throw new Error("Cannot get some properties from PropertiesService");
+    return;
+  }
   var fetcher = new HatebuFetcher(username, tag);
   var endOfOffset = fetcher.getItemsNum();
   var offsetList = getRandomNumbers(0, endOfOffset, fetchNum);
   var urlList = getHatebuUrlList(fetcher, offsetList);
   
   // write to spreadsheet
+  var spreadsheet_id = properties.getProperty("spreadsheet_id");
+  if(!spreadsheet_id.length) {
+    throw new Error("Cannot get 'spreadsheet_id' from PropertiesService");
+    return;
+  }
   var sheet = SpreadsheetApp.openById(spreadsheet_id).getSheets()[0];
   var sheetWriter = new OutputListSheetController(sheet);
   sheetWriter.writeList(urlList);
