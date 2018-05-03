@@ -1,5 +1,6 @@
 var username = "";
 var tag = "";
+var spreadsheet_id = "";
 var fetchNum = 10;
 
 function outputListMain() {
@@ -10,7 +11,8 @@ function outputListMain() {
   var urlList = getHatebuUrlList(fetcher, offsetList);
   
   // write to spreadsheet
-  var sheetWriter = new OutputListSheetController();
+  var sheet = SpreadsheetApp.openById(spreadsheet_id).getSheets()[0];
+  var sheetWriter = new OutputListSheetController(sheet);
   sheetWriter.writeList(urlList);
 }
 

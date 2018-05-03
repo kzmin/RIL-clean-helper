@@ -1,8 +1,8 @@
 (function(global) {
   var OutputListSheetController = (function() {
     // constructor
-    function OutputListSheetController() {
-      this.sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    function OutputListSheetController(sheet) {
+      this.sheet = sheet;
       updateLastRow_(this);
     }
     
