@@ -16,11 +16,16 @@ function outputListMain() {
   
   // write to spreadsheet
   var spreadsheet_id = properties.getProperty("spreadsheet_id");
+  var sheet_name = properties.getProperty("spreadsheet_sheet_name");
   if(!spreadsheet_id.length) {
     throw new Error("Cannot get 'spreadsheet_id' from PropertiesService");
     return;
   }
-  var sheet = SpreadsheetApp.openById(spreadsheet_id).getSheets()[0];
+  var sheet = SpreadsheetApp.openById(spreadsheet_id).getSheetByName(sheet_name);
+  if(!sheet) {
+    throw new Error("Invalid sheet: " + sheet_name);
+    return;
+  }
   var sheetWriter = new OutputListSheetController(sheet);
   sheetWriter.writeList(urlList);
 }

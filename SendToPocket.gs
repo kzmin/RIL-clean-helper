@@ -1,16 +1,22 @@
 var POCKET_CONSUMER_KEY = "";
-var properties = PropertiesService.getUserProperties();
+var propertyStore = PropertiesService.getUserProperties();
 
 function sendToPocketMain() {
   // get URL list from sheet
-  var spreadsheet_id = PropertiesService.getScriptProperties().getProperty("spreadsheet_id");
+  var properties = PropertiesService.getScriptProperties();
+  var spreadsheet_id = properties.getProperty("spreadsheet_id");
+  var sheet_name = properties.getProperty("spreadsheet_sheet_name");
   if(!spreadsheet_id.length) {
     throw new Error("Cannot get 'spreadsheet_id' from PropertiesService");
     return;
   }
-  var sheet = SpreadsheetApp.openById(spreadsheet_id).getSheets()[0];
-  var sheetWriter = new OutputListSheetController(sheet);
-  var urlList = sheetWriter.readList();
+  var sheet = SpreadsheetApp.openById(spreadsheet_id).getSheetByName(sheet_name);
+  if(!sheet) {
+    throw new Error("Invalid sheet: " + sheet_name);
+    return;
+  }
+  var sheetReader = new OutputListSheetController(sheet);
+  var urlList = sheetReader.readList();
   Logger.log("urlList: " + urlList.toSource());
   
   // request to add to Pocket
@@ -19,8 +25,8 @@ function sendToPocketMain() {
     method: "post",
     muteHttpExceptions: true,
     payload:{
-      consumer_key: properties.getProperty('pocket_consumer_key'),
-      access_token: properties.getProperty('pocket_access_token')
+      consumer_key: propertyStore.getProperty('pocket_consumer_key'),
+      access_token: propertyStore.getProperty('pocket_access_token')
     }
   };
   urlList.forEach(function(e) {
@@ -48,7 +54,7 @@ function pocket_oauth() {
   });
   if(response.getResponseCode() != 200) {
     // Fail
-    properties.deleteAllProperties();
+    propertyStore.deleteAllProperties();
     Logger.log("Failed to get the request token");
   } else {
     // Success
@@ -57,7 +63,7 @@ function pocket_oauth() {
       request_token: code,
       redirect_uri: getRedirectUri(ScriptApp.getScriptId())
     };
-    properties.setProperties({
+    propertyStore.setProperties({
       pocket_consumer_key: POCKET_CONSUMER_KEY,
       pocket_request_token_code: code
     });
@@ -67,8 +73,8 @@ function pocket_oauth() {
 
 function pocket_authorize() {
   const ACCESS_TOKEN_URL = "https://getpocket.com/v3/oauth/authorize";
-  var consumer_key = properties.getProperty("pocket_consumer_key");
-  var code = properties.getProperty("pocket_request_token_code");
+  var consumer_key = propertyStore.getProperty("pocket_consumer_key");
+  var code = propertyStore.getProperty("pocket_request_token_code");
 
   var response = UrlFetchApp.fetch(ACCESS_TOKEN_URL, {
     method: "post",
@@ -82,14 +88,12 @@ function pocket_authorize() {
   });
   if(response.getResponseCode() != 200) {
     // Fail
-    //properties.deleteAllProperties();
+    propertyStore.deleteAllProperties();
     Logger.log("Failed to authorize");
-    Logger.log("Header: " + response.getHeaders().toSource());
-    Logger.log("Content: " + response.getContentText());
   } else {
     // Success
     var access_token = JSON.parse(response.getContentText())["access_token"];
-    properties.setProperties({
+    propertyStore.setProperties({
       pocket_access_token: access_token
     });
     Logger.log("Access Token: " + access_token);
